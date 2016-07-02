@@ -3,16 +3,32 @@ package com.experiment;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.container.httpserver.HttpServerFactory;
+import com.sun.jersey.api.core.PackagesResourceConfig;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.net.httpserver.HttpServer;
+
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.net.URI;
 
 // https://examples.javacodegeeks.com/core-java/jax-rs-client-example/
 public class App
 {
-    static Client client = Client.create();
+    private Client client;
+    private HttpServer server;
 
-    static String getUrl = "http://www.thomas-bayer.com/sqlrest/";
+    private String testUrl = "http://www.thomas-bayer.com/sqlrest/";
 
-    public static void getRequest() {
-        WebResource webResource = client.resource(getUrl);
+    public void initializeAndStart() throws IOException {
+        client = Client.create();
+        server = createHttpServer();
+        server.start();
+    }
+
+
+    public void sendRequest() {
+        WebResource webResource = client.resource(testUrl);
         ClientResponse response = webResource.accept("application/json").get(ClientResponse.class);
         if (response.getStatus() != 200) {
             throw new RuntimeException("HTTP Error: " + response.getStatus());
@@ -23,8 +39,28 @@ public class App
         System.out.println(result);
     }
 
+
+    private HttpServer createHttpServer() throws IOException {
+        return HttpServerFactory.create(getURI(), getResouceConfig());
+    }
+
+    private ResourceConfig getResouceConfig() {
+        return new PackagesResourceConfig("com.experiment");
+    }
+
+    private URI getURI() {
+        return UriBuilder.fromUri("http://" + "localhost" + "/").port(8032).build();
+    }
+
     public static void main( String[] args )
     {
-        getRequest();
+        App app = new App();
+        try {
+            app.initializeAndStart();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //app.sendRequest();
     }
 }
